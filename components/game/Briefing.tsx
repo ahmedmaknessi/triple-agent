@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useTransition } from 'react';
-import { Shield, AlertTriangle } from 'lucide-react';
-import { confirmBriefing } from '@/actions/game.actions';
+import { Shield, AlertTriangle, Play } from 'lucide-react';
+import { confirmBriefing, startOperations } from '@/actions/game.actions';
 import { getTeammateList } from '@/lib/game/roles';
 import { ClassifiedBanner } from '@/components/layout/ClassifiedBanner';
 import type { Room, Player } from '@/types/game';
@@ -17,21 +17,66 @@ interface BriefingProps {
 const HOLD_DURATION_MS = 2000;
 
 export function Briefing({ room, players, myPlayer, playerToken }: BriefingProps) {
-  const isMyTurn = room.current_turn_player_id === myPlayer.id;
-  const activeName = players.find((p) => p.id === room.current_turn_player_id)?.name ?? '...';
+  const isMyTurn  = room.current_turn_player_id === myPlayer.id;
+  const isHost    = myPlayer.id === room.host_id;
+  const allBriefed = room.current_turn_player_id === null;
+  const activeName = players.find((p) => p.id === room.current_turn_player_id)?.name ?? '';
+
+  const [opsError, setOpsError]       = useState<string | null>(null);
+  const [opsPending, startOpsTransition] = useTransition();
+
+  function handleStartOperations() {
+    setOpsError(null);
+    startOpsTransition(async () => {
+      try {
+        await startOperations(room.id, playerToken);
+      } catch (e) {
+        setOpsError(e instanceof Error ? e.message : 'Failed to start operations');
+      }
+    });
+  }
 
   if (!isMyTurn) {
     return (
       <div className="flex min-h-screen flex-col bg-[var(--color-bg-base)]">
         <ClassifiedBanner />
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
-          <p className="font-mono text-sm tracking-[0.2em] text-[var(--color-text-secondary)]">
-            <span className="text-[var(--color-text-primary)]">{activeName}</span> IS BEING
-            BRIEFED — EYES FORWARD
-          </p>
-          <span className="font-mono text-xs text-[var(--color-text-muted)] [animation:decrypting_1.5s_steps(4)_infinite]">
-            [DECRYPTING...]
-          </span>
+          {allBriefed ? (
+            <>
+              <p className="font-mono text-sm tracking-[0.2em] text-[var(--color-text-secondary)]">
+                ALL AGENTS BRIEFED
+              </p>
+              {isHost ? (
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={handleStartOperations}
+                    disabled={opsPending}
+                    className="flex items-center gap-2 rounded-lg bg-[var(--color-accent-green)] px-8 py-3 font-mono text-sm font-medium tracking-widest text-[var(--color-bg-base)] disabled:opacity-40"
+                  >
+                    <Play size={16} />
+                    BEGIN OPERATIONS
+                  </button>
+                  {opsError && (
+                    <p className="font-mono text-sm text-[var(--color-accent-red)]">{opsError}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="font-mono text-xs text-[var(--color-text-muted)]">
+                  Waiting for host to begin operations...
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="font-mono text-sm tracking-[0.2em] text-[var(--color-text-secondary)]">
+                <span className="text-[var(--color-text-primary)]">{activeName}</span> IS BEING
+                BRIEFED — EYES FORWARD
+              </p>
+              <span className="font-mono text-xs text-[var(--color-text-muted)] [animation:decrypting_1.5s_steps(4)_infinite]">
+                [DECRYPTING...]
+              </span>
+            </>
+          )}
         </div>
       </div>
     );
