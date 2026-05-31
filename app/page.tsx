@@ -128,7 +128,7 @@ export default function LandingPage() {
             <input
               autoFocus
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
+              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
               placeholder="ABCD"
               maxLength={4}
               className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] px-4 py-3 font-mono text-2xl tracking-[0.4em] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-accent-green)] focus:outline-none"
