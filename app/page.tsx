@@ -1,65 +1,175 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { PlusCircle, LogIn } from 'lucide-react';
+import { createRoom, joinRoom } from '@/actions/room.actions';
+import { getOrCreateToken } from '@/lib/utils/token';
+
+type Mode = 'idle' | 'create' | 'join';
+
+export default function LandingPage() {
+  const router  = useRouter();
+  const [mode, setMode]   = useState<Mode>('idle');
+  const [name, setName]   = useState('');
+  const [code, setCode]   = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Ensure token exists in localStorage before any action
+  useEffect(() => { getOrCreateToken(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const token = getOrCreateToken();
+      const { code: roomCode } = await createRoom(name.trim(), token);
+      router.push(`/room/${roomCode}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create room');
+      setLoading(false);
+    }
+  }
+
+  async function handleJoin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !code.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const token = getOrCreateToken();
+      const { code: roomCode } = await joinRoom(code.trim().toUpperCase(), name.trim(), token);
+      router.push(`/room/${roomCode}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join room');
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-bg-base)] px-4">
+      {/* Header */}
+      <div className="mb-12 flex flex-col items-center gap-3">
+        <p className="font-mono text-xs tracking-[0.4em] text-[var(--color-text-muted)]">
+          CLASSIFIED OPERATION
+        </p>
+        <h1 className="font-syne text-5xl font-bold tracking-[0.15em] text-[var(--color-text-primary)] sm:text-6xl">
+          TRIPLE AGENT
+        </h1>
+        <p className="font-mono text-sm text-[var(--color-text-secondary)]">
+          A social deduction game. 5–12 players. One truth.
+        </p>
+      </div>
+
+      {/* Action area */}
+      {mode === 'idle' && (
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <button
+            onClick={() => setMode('create')}
+            className="flex items-center gap-2 rounded-lg bg-[var(--color-accent-green)] px-8 py-3 font-mono text-sm font-medium tracking-widest text-[var(--color-bg-base)] transition-opacity hover:opacity-90"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <PlusCircle size={16} />
+            CREATE ROOM
+          </button>
+          <button
+            onClick={() => setMode('join')}
+            className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-8 py-3 font-mono text-sm tracking-widest text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-secondary)]"
+          >
+            <LogIn size={16} />
+            JOIN ROOM
+          </button>
+        </div>
+      )}
+
+      {mode === 'create' && (
+        <form onSubmit={handleCreate} className="flex w-full max-w-sm flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block font-mono text-[10px] tracking-widest text-[var(--color-text-muted)]">
+              AGENT NAME
+            </label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={20}
+              placeholder="Enter your name"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] px-4 py-3 font-mono text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-accent-green)] focus:outline-none"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+          </div>
+          {error && <p className="font-mono text-sm text-[var(--color-accent-red)]">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => { setMode('idle'); setError(null); }}
+              className="flex-1 rounded-lg border border-[var(--color-border)] py-3 font-mono text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+            >
+              BACK
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim() || loading}
+              className="flex-1 rounded-lg bg-[var(--color-accent-green)] py-3 font-mono text-sm font-medium tracking-widest text-[var(--color-bg-base)] disabled:opacity-40"
+            >
+              {loading ? '[CREATING...]' : 'CREATE'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {mode === 'join' && (
+        <form onSubmit={handleJoin} className="flex w-full max-w-sm flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block font-mono text-[10px] tracking-widest text-[var(--color-text-muted)]">
+              ROOM CODE
+            </label>
+            <input
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
+              placeholder="ABCD"
+              maxLength={4}
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] px-4 py-3 font-mono text-2xl tracking-[0.4em] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-accent-green)] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block font-mono text-[10px] tracking-widest text-[var(--color-text-muted)]">
+              AGENT NAME
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={20}
+              placeholder="Enter your name"
+              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-surface)] px-4 py-3 font-mono text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-accent-green)] focus:outline-none"
+            />
+          </div>
+          {error && <p className="font-mono text-sm text-[var(--color-accent-red)]">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => { setMode('idle'); setError(null); }}
+              className="flex-1 rounded-lg border border-[var(--color-border)] py-3 font-mono text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+            >
+              BACK
+            </button>
+            <button
+              type="submit"
+              disabled={code.length !== 4 || !name.trim() || loading}
+              className="flex-1 rounded-lg bg-[var(--color-accent-green)] py-3 font-mono text-sm font-medium tracking-widest text-[var(--color-bg-base)] disabled:opacity-40"
+            >
+              {loading ? '[JOINING...]' : 'JOIN'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Footer */}
+      <p className="absolute bottom-6 font-mono text-xs text-[var(--color-text-muted)]">
+        No account required. Share the room code with other agents.
+      </p>
     </div>
   );
 }
