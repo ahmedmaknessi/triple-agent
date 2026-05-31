@@ -57,13 +57,12 @@ export function GameShell({ code }: GameShellProps) {
       if (!joinName.trim()) return;
       setJoinError(null);
       setJoinLoading(true);
-      try {
-        await joinRoom(code, joinName.trim(), playerToken);
-        // players subscription will pick up the new row — no redirect needed
-      } catch (err) {
-        setJoinError(err instanceof Error ? err.message : 'Failed to join');
+      const result = await joinRoom(code, joinName.trim(), playerToken);
+      if ('error' in result) {
+        setJoinError(result.error);
         setJoinLoading(false);
       }
+      // On success: players subscription picks up the new row automatically
     }
 
     return (

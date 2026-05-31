@@ -24,14 +24,14 @@ export default function LandingPage() {
     if (!name.trim()) return;
     setError(null);
     setLoading(true);
-    try {
-      const token = getOrCreateToken();
-      const { code: roomCode } = await createRoom(name.trim(), token);
-      router.push(`/room/${roomCode}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create room');
+    const token = getOrCreateToken();
+    const result = await createRoom(name.trim(), token);
+    if ('error' in result) {
+      setError(result.error);
       setLoading(false);
+      return;
     }
+    router.push(`/room/${result.code}`);
   }
 
   async function handleJoin(e: React.FormEvent) {
@@ -39,14 +39,14 @@ export default function LandingPage() {
     if (!name.trim() || !code.trim()) return;
     setError(null);
     setLoading(true);
-    try {
-      const token = getOrCreateToken();
-      const { code: roomCode } = await joinRoom(code.trim().toUpperCase(), name.trim(), token);
-      router.push(`/room/${roomCode}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join room');
+    const token = getOrCreateToken();
+    const result = await joinRoom(code.trim().toUpperCase(), name.trim(), token);
+    if ('error' in result) {
+      setError(result.error);
       setLoading(false);
+      return;
     }
+    router.push(`/room/${result.code}`);
   }
 
   return (
