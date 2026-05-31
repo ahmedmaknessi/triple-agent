@@ -14,7 +14,14 @@ export function usePresence(
   room: Room | null,
 ) {
   const hostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const supabaseRef  = useRef(createClient());
+  // Lazy — createClient() calls createBrowserClient which accesses browser APIs;
+  // initialising it in useRef() would run during SSR and throw.
+  const supabaseRef  = useRef<ReturnType<typeof createClient> | null>(null);
+
+  function getSupabase() {
+    if (!supabaseRef.current) supabaseRef.current = createClient();
+    return supabaseRef.current;
+  }
 
   // Mark self online/offline via server action
   useEffect(() => {
@@ -32,7 +39,7 @@ export function usePresence(
   useEffect(() => {
     if (!roomCode || !room?.host_id) return;
 
-    const supabase = supabaseRef.current;
+    const supabase = getSupabase();
     const channel = supabase.channel(`presence:${roomCode}`, {
       config: { presence: { key: playerId ?? 'anon' } },
     });
