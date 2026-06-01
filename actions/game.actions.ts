@@ -43,7 +43,8 @@ export async function startGame(roomCode: string, hostToken: string): Promise<vo
     .order('join_order', { ascending: true });
 
   if (error || !players) throw new Error('Failed to fetch players');
-  if (players.length < 5)  throw new Error('Need at least 5 players to start');
+  const minPlayers = parseInt(process.env.MIN_PLAYERS ?? '5', 10);
+  if (players.length < minPlayers) throw new Error(`Need at least ${minPlayers} players to start`);
   if (players.length > 12) throw new Error('Maximum 12 players allowed');
 
   const assignments = assignFactionsAndRoles(players.map(p => p.id), { useSecretRoles: true });

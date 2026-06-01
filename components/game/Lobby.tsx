@@ -18,7 +18,8 @@ interface LobbyProps {
 
 export function Lobby({ room, players, myPlayer, hostToken }: LobbyProps) {
   const isHost = myPlayer.id === room.host_id;
-  const canStart = players.length >= 5;
+  const minPlayers = parseInt(process.env.NEXT_PUBLIC_MIN_PLAYERS ?? '5', 10);
+  const canStart = players.length >= minPlayers;
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -102,7 +103,7 @@ export function Lobby({ room, players, myPlayer, hostToken }: LobbyProps) {
             </button>
             {!canStart && (
               <p className="font-mono text-xs text-[var(--color-text-muted)]">
-                Minimum 5 agents required ({5 - players.length} more needed)
+                Minimum {minPlayers} agents required ({minPlayers - players.length} more needed)
               </p>
             )}
           </div>
