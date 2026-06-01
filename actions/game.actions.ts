@@ -46,8 +46,7 @@ export async function startGame(roomCode: string, hostToken: string): Promise<vo
   if (players.length < 5)  throw new Error('Need at least 5 players to start');
   if (players.length > 12) throw new Error('Maximum 12 players allowed');
 
-  // Assign factions (and secret roles if expansion enabled — default: off)
-  const assignments = assignFactionsAndRoles(players.map(p => p.id));
+  const assignments = assignFactionsAndRoles(players.map(p => p.id), { useSecretRoles: true });
 
   // Apply to each player
   for (const a of assignments) {
@@ -166,5 +165,6 @@ export async function resetRoom(roomCode: string, hostToken: string): Promise<vo
     timer_ends_at:          null,
     paused_by:              null,
     round_number:           1,
+    previous_votes:         null,
   }).eq('id', roomCode);
 }

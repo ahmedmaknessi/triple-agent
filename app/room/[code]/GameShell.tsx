@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { joinRoom } from '@/actions/room.actions';
 import { getOrCreateToken } from '@/lib/utils/token';
+import { scrubPlayersForClient } from '@/lib/game/scrub';
 import { useRoom } from '@/hooks/useRoom';
 import { usePlayers } from '@/hooks/usePlayers';
 import { useMyPlayer } from '@/hooks/useMyPlayer';
 import { usePresence } from '@/hooks/usePresence';
 import { PhaseRouter } from '@/components/game/PhaseRouter';
+import type { Player } from '@/types/game';
 
 interface GameShellProps {
   code: string;
@@ -23,6 +25,17 @@ export function GameShell({ code }: GameShellProps) {
   const { myPlayer }                         = useMyPlayer(players, room);
 
   usePresence(code, myPlayer?.id ?? null, playerToken, room);
+
+  // Scrub secret fields from OTHER players during active game phases.
+  // BRIEFING is excluded so getTeammateList() can see current_faction for teammate display.
+  // LOBBY/FINISHED expose no sensitive data (no factions assigned yet / full reveal is correct).
+  const displayPlayers = useMemo((): Player[] => {
+    if (!myPlayer || !room) return players;
+    if (['OPERATIONS', 'DISCUSSION', 'VOTING'].includes(room.status)) {
+      return scrubPlayersForClient(myPlayer.id, players, room.status) as Player[];
+    }
+    return players;
+  }, [players, myPlayer, room]);
 
   // Auto-join state (for direct URL navigation without going through landing)
   const [joinName, setJoinName]     = useState('');
@@ -100,7 +113,7 @@ export function GameShell({ code }: GameShellProps) {
   return (
     <PhaseRouter
       room={room}
-      players={players}
+      players={displayPlayers}
       myPlayer={myPlayer}
       playerToken={playerToken}
     />

@@ -14,8 +14,12 @@ create table rooms (
   kicked_players        text[] default '{}',
   current_turn_player_id uuid,
   round_number          int default 1,
+  previous_votes        jsonb,                           -- snapshot of vote_target_id map from last round
   created_at            timestamptz default now()
 );
+
+-- Migration (run if upgrading an existing DB):
+-- alter table rooms add column if not exists previous_votes jsonb;
 
 -- PLAYERS TABLE
 create table players (

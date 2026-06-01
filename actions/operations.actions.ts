@@ -196,6 +196,9 @@ export async function executeOperation(
     .eq('round_number', room.round_number);
   const operationLog = (logRaw ?? []) as OperationLogRow[];
 
+  // Previous round votes for wire_tap (snapshotted at end of last voting phase)
+  const previousVotes = (room.previous_votes as Record<string, string> | null) ?? {};
+
   // Execute the operation (pure function — no DB calls inside)
   const result = operation.execute({
     activePlayer: player,
@@ -203,6 +206,7 @@ export async function executeOperation(
     secondTargetPlayer,
     allPlayers,
     operationLog,
+    previousVotes,
   });
 
   // Apply player mutations

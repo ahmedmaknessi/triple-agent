@@ -84,9 +84,8 @@ export function resolveWinner(players: Player[]): WinResult {
   }
 
   // ── 6. Triple Agent rule ────────────────────────────────────────────────────
-  const tripleAgent = players.find(
-    p => p.secret_role === 'TRIPLE_AGENT' && p.current_faction === 'VIRUS',
-  );
+  // Role is permanent — check by role only, not current faction (agent may have been defected)
+  const tripleAgent = players.find(p => p.secret_role === 'TRIPLE_AGENT');
 
   if (tripleAgent) {
     if (tripleAgent.id === imprisonedId) {

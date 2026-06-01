@@ -17,13 +17,18 @@ async function runTally(
     .eq('room_id', roomCode);
   const players = (playersRaw ?? []) as Player[];
 
-  const result = resolveWinner(players);
+  resolveWinner(players);
 
-  // Persist vote counts so the FINISHED screen can show them
-  // (winner is derivable from player data — no extra column needed)
+  // Snapshot vote_target_id values so wire_tap can read them in subsequent rounds
+  const previousVotes: Record<string, string> = {};
+  for (const p of players) {
+    if (p.vote_target_id) previousVotes[p.id] = p.vote_target_id;
+  }
+
   await supabase.from('rooms').update({
-    status:    'FINISHED',
-    paused_by: null,
+    status:         'FINISHED',
+    paused_by:      null,
+    previous_votes: previousVotes,
   }).eq('id', roomCode);
 }
 

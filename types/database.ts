@@ -29,6 +29,7 @@ export interface RoomRow {
   kicked_players: string[];
   current_turn_player_id: string | null;
   round_number: number;
+  previous_votes: Record<string, string> | null;
   created_at: string;
   [key: string]: unknown;
 }
@@ -87,6 +88,7 @@ export interface RoomInsert {
   kicked_players?: string[];
   current_turn_player_id?: string | null;
   round_number?: number;
+  previous_votes?: Record<string, string> | null;
   created_at?: string;
   [key: string]: unknown;
 }
@@ -145,6 +147,7 @@ export interface RoomUpdate {
   kicked_players?: string[];
   current_turn_player_id?: string | null;
   round_number?: number;
+  previous_votes?: Record<string, string> | null;
   created_at?: string;
   [key: string]: unknown;
 }

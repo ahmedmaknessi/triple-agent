@@ -4,7 +4,8 @@ import { useState, useEffect, useTransition } from 'react';
 import { Zap } from 'lucide-react';
 import { drawOperation, executeOperation } from '@/actions/operations.actions';
 import { forceSkip } from '@/actions/operations.actions';
-import { OPERATIONS } from '@/lib/game/operations';
+import { OPERATIONS, hiddenAgendaRequiresTarget } from '@/lib/game/operations';
+import type { HiddenAgenda } from '@/types/game';
 import { useGameStore } from '@/store/gameStore';
 import { cn } from '@/lib/utils';
 import type { Room, Player } from '@/types/game';
@@ -45,13 +46,22 @@ export function OperationCard({ room, players, myPlayer, playerToken, hostToken 
   const operationId = myPlayer.operation_received;
   const operation   = operationId ? OPERATIONS[operationId] : null;
 
+  // For hidden_agenda, the sub-type stored on myPlayer determines whether a target is needed
+  const hiddenAgendaSub = myPlayer.hidden_agenda as HiddenAgenda | null;
+  const needsTarget =
+    !!operation &&
+    (operation.requiresTarget ||
+      (operation.id === 'hidden_agenda' && !!hiddenAgendaSub && hiddenAgendaRequiresTarget(hiddenAgendaSub)));
+
   const validTargets = players.filter((p) => p.id !== myPlayer.id);
 
   function handleDraw() {
     setError(null);
     startTransition(async () => {
       try {
-        await drawOperation(room.id, playerToken);
+        const result = await drawOperation(room.id, playerToken);
+        // Show any pending dead drop message delivered at turn start
+        if (result.deadDropMessage) setPrivateMessage(result.deadDropMessage);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Draw failed');
       }
@@ -158,7 +168,7 @@ export function OperationCard({ room, players, myPlayer, playerToken, hostToken 
             </p>
 
             {/* Target selectors */}
-            {operation.requiresTarget && (
+            {needsTarget && (
               <div className="mt-4">
                 <label className="mb-1.5 block font-mono text-[10px] tracking-widest text-[var(--color-text-muted)]">
                   SELECT TARGET
@@ -209,7 +219,7 @@ export function OperationCard({ room, players, myPlayer, playerToken, hostToken 
             onClick={handleExecute}
             disabled={
               isPending ||
-              (operation.requiresTarget && !target1) ||
+              (needsTarget && !target1) ||
               (!!operation.requiresSecondTarget && !target2)
             }
             className="mt-4 w-full rounded-lg bg-[var(--color-accent-green)] py-3 font-mono text-sm font-medium tracking-widest text-[var(--color-bg-base)] disabled:opacity-40"

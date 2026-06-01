@@ -159,6 +159,10 @@ const deepUndercover: OperationDefinition = {
   execute({ targetPlayer }: ExecuteContext): OperationResult {
     if (!targetPlayer) return { success: false, privateMessage: 'No target selected.' };
 
+    if (isLoyalist(targetPlayer)) {
+      return { success: false, privateMessage: 'Target is a Loyalist. Operation failed.' };
+    }
+
     if (targetPlayer.secret_role === 'DEEP_COVER' || targetPlayer.secret_role === 'SUSPICIOUS_AGENT') {
       const roleLabel =
         targetPlayer.secret_role === 'DEEP_COVER' ? 'Deep Cover Agent' : 'Suspicious Agent';
